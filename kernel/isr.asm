@@ -1,0 +1,583 @@
+;Exception # Description                            Error Code?
+;0           Division By Zero Exception             No         
+;1           Debug Exception                        No         
+;2           Non Maskable Interrupt Exception       No         
+;3           Breakpoint Exception                   No         
+;4           Into Detected Overflow Exception       No         
+;5           Out of Bounds Exception                No         
+;6           Invalid Opcode Exception               No         
+;7           No Coprocessor Exception               No         
+;8           Double Fault Exception                 Yes        
+;9           Coprocessor Segment Overrun Exception  No         
+;10          Bad TSS Exception                      Yes        
+;11          Segment Not Present Exception          Yes        
+;12          Stack Fault Exception                  Yes        
+;13          General Protection Fault Exception     Yes        
+;14          Page Fault Exception                   Yes        
+[SECTION .text]
+; ISRs 0 to 31 are reserved for exceptions, some of them push error codes, and 
+; some of them don't. to keep a uniform stack frame, we push a dummy byte for those 
+; who don't push error codes themselves.
+%macro ISR_WITHOUT_ERRORCODE 1
+global asm_isr_%1
+asm_isr_%1:
+	cld
+	cli
+	push dword 0 ; push a dummy word to get a uniform trapframe.
+	push dword %1 ;push the trap number
+	jmp isr_common
+%endmacro
+
+%macro ISR_WITH_ERRORCODE 1
+global asm_isr_%1
+asm_isr_%1:
+	cld
+	cli
+	push dword %1 ; push the trap number
+	jmp isr_common
+%endmacro
+
+extern handle_interrupt ; interrupt.c 
+isr_common:
+	; set up the trap frame and call the C interrupt handler (handle_interrupt() in interrupt.c)
+	; the cpu has already pushed 
+	pusha ; save all the registers
+	push ds
+	push fs
+	push es
+	push gs
+	
+	mov ax, 0x10 ; Kernel data segment(KDATA_SEGMENT(x86.h) * 8), TODO don't hard code this.
+	mov ds, ax
+	mov es, ax
+
+	mov ebx, esp ; push a pointer to the current stack frame as an argument to handle_interrupt()
+	push ebx
+	call handle_interrupt
+	pop ebx
+	
+	pop gs
+	pop es
+	pop fs
+	pop ds
+	popa
+	
+	add esp, 8 ; clean up the trap number and the errocode
+	iret
+ISR_WITHOUT_ERRORCODE 0
+ISR_WITHOUT_ERRORCODE 1
+ISR_WITHOUT_ERRORCODE 2
+ISR_WITHOUT_ERRORCODE 3
+ISR_WITHOUT_ERRORCODE 4
+ISR_WITHOUT_ERRORCODE 5
+ISR_WITHOUT_ERRORCODE 6
+ISR_WITHOUT_ERRORCODE 7
+ISR_WITH_ERRORCODE 8
+ISR_WITHOUT_ERRORCODE 9
+ISR_WITH_ERRORCODE 10
+ISR_WITH_ERRORCODE 11
+ISR_WITH_ERRORCODE 12
+ISR_WITH_ERRORCODE 13
+ISR_WITH_ERRORCODE 14
+ISR_WITHOUT_ERRORCODE 15
+ISR_WITHOUT_ERRORCODE 16
+ISR_WITHOUT_ERRORCODE 17
+ISR_WITHOUT_ERRORCODE 18
+ISR_WITHOUT_ERRORCODE 19
+ISR_WITHOUT_ERRORCODE 20
+ISR_WITHOUT_ERRORCODE 21
+ISR_WITHOUT_ERRORCODE 22
+ISR_WITHOUT_ERRORCODE 23
+ISR_WITHOUT_ERRORCODE 24
+ISR_WITHOUT_ERRORCODE 25
+ISR_WITHOUT_ERRORCODE 26
+ISR_WITHOUT_ERRORCODE 27
+ISR_WITHOUT_ERRORCODE 28
+ISR_WITHOUT_ERRORCODE 29
+ISR_WITHOUT_ERRORCODE 30
+ISR_WITHOUT_ERRORCODE 31
+ISR_WITHOUT_ERRORCODE 32
+ISR_WITHOUT_ERRORCODE 33
+ISR_WITHOUT_ERRORCODE 34
+ISR_WITHOUT_ERRORCODE 35
+ISR_WITHOUT_ERRORCODE 36
+ISR_WITHOUT_ERRORCODE 37
+ISR_WITHOUT_ERRORCODE 38
+ISR_WITHOUT_ERRORCODE 39
+ISR_WITHOUT_ERRORCODE 40
+ISR_WITHOUT_ERRORCODE 41
+ISR_WITHOUT_ERRORCODE 42
+ISR_WITHOUT_ERRORCODE 43
+ISR_WITHOUT_ERRORCODE 44
+ISR_WITHOUT_ERRORCODE 45
+ISR_WITHOUT_ERRORCODE 46
+ISR_WITHOUT_ERRORCODE 47
+ISR_WITHOUT_ERRORCODE 48
+ISR_WITHOUT_ERRORCODE 49
+ISR_WITHOUT_ERRORCODE 50
+ISR_WITHOUT_ERRORCODE 51
+ISR_WITHOUT_ERRORCODE 52
+ISR_WITHOUT_ERRORCODE 53
+ISR_WITHOUT_ERRORCODE 54
+ISR_WITHOUT_ERRORCODE 55
+ISR_WITHOUT_ERRORCODE 56
+ISR_WITHOUT_ERRORCODE 57
+ISR_WITHOUT_ERRORCODE 58
+ISR_WITHOUT_ERRORCODE 59
+ISR_WITHOUT_ERRORCODE 60
+ISR_WITHOUT_ERRORCODE 61
+ISR_WITHOUT_ERRORCODE 62
+ISR_WITHOUT_ERRORCODE 63
+ISR_WITHOUT_ERRORCODE 64
+ISR_WITHOUT_ERRORCODE 65
+ISR_WITHOUT_ERRORCODE 66
+ISR_WITHOUT_ERRORCODE 67
+ISR_WITHOUT_ERRORCODE 68
+ISR_WITHOUT_ERRORCODE 69
+ISR_WITHOUT_ERRORCODE 70
+ISR_WITHOUT_ERRORCODE 71
+ISR_WITHOUT_ERRORCODE 72
+ISR_WITHOUT_ERRORCODE 73
+ISR_WITHOUT_ERRORCODE 74
+ISR_WITHOUT_ERRORCODE 75
+ISR_WITHOUT_ERRORCODE 76
+ISR_WITHOUT_ERRORCODE 77
+ISR_WITHOUT_ERRORCODE 78
+ISR_WITHOUT_ERRORCODE 79
+ISR_WITHOUT_ERRORCODE 80
+ISR_WITHOUT_ERRORCODE 81
+ISR_WITHOUT_ERRORCODE 82
+ISR_WITHOUT_ERRORCODE 83
+ISR_WITHOUT_ERRORCODE 84
+ISR_WITHOUT_ERRORCODE 85
+ISR_WITHOUT_ERRORCODE 86
+ISR_WITHOUT_ERRORCODE 87
+ISR_WITHOUT_ERRORCODE 88
+ISR_WITHOUT_ERRORCODE 89
+ISR_WITHOUT_ERRORCODE 90
+ISR_WITHOUT_ERRORCODE 91
+ISR_WITHOUT_ERRORCODE 92
+ISR_WITHOUT_ERRORCODE 93
+ISR_WITHOUT_ERRORCODE 94
+ISR_WITHOUT_ERRORCODE 95
+ISR_WITHOUT_ERRORCODE 96
+ISR_WITHOUT_ERRORCODE 97
+ISR_WITHOUT_ERRORCODE 98
+ISR_WITHOUT_ERRORCODE 99
+ISR_WITHOUT_ERRORCODE 100
+ISR_WITHOUT_ERRORCODE 101
+ISR_WITHOUT_ERRORCODE 102
+ISR_WITHOUT_ERRORCODE 103
+ISR_WITHOUT_ERRORCODE 104
+ISR_WITHOUT_ERRORCODE 105
+ISR_WITHOUT_ERRORCODE 106
+ISR_WITHOUT_ERRORCODE 107
+ISR_WITHOUT_ERRORCODE 108
+ISR_WITHOUT_ERRORCODE 109
+ISR_WITHOUT_ERRORCODE 110
+ISR_WITHOUT_ERRORCODE 111
+ISR_WITHOUT_ERRORCODE 112
+ISR_WITHOUT_ERRORCODE 113
+ISR_WITHOUT_ERRORCODE 114
+ISR_WITHOUT_ERRORCODE 115
+ISR_WITHOUT_ERRORCODE 116
+ISR_WITHOUT_ERRORCODE 117
+ISR_WITHOUT_ERRORCODE 118
+ISR_WITHOUT_ERRORCODE 119
+ISR_WITHOUT_ERRORCODE 120
+ISR_WITHOUT_ERRORCODE 121
+ISR_WITHOUT_ERRORCODE 122
+ISR_WITHOUT_ERRORCODE 123
+ISR_WITHOUT_ERRORCODE 124
+ISR_WITHOUT_ERRORCODE 125
+ISR_WITHOUT_ERRORCODE 126
+ISR_WITHOUT_ERRORCODE 127
+ISR_WITHOUT_ERRORCODE 128
+ISR_WITHOUT_ERRORCODE 129
+ISR_WITHOUT_ERRORCODE 130
+ISR_WITHOUT_ERRORCODE 131
+ISR_WITHOUT_ERRORCODE 132
+ISR_WITHOUT_ERRORCODE 133
+ISR_WITHOUT_ERRORCODE 134
+ISR_WITHOUT_ERRORCODE 135
+ISR_WITHOUT_ERRORCODE 136
+ISR_WITHOUT_ERRORCODE 137
+ISR_WITHOUT_ERRORCODE 138
+ISR_WITHOUT_ERRORCODE 139
+ISR_WITHOUT_ERRORCODE 140
+ISR_WITHOUT_ERRORCODE 141
+ISR_WITHOUT_ERRORCODE 142
+ISR_WITHOUT_ERRORCODE 143
+ISR_WITHOUT_ERRORCODE 144
+ISR_WITHOUT_ERRORCODE 145
+ISR_WITHOUT_ERRORCODE 146
+ISR_WITHOUT_ERRORCODE 147
+ISR_WITHOUT_ERRORCODE 148
+ISR_WITHOUT_ERRORCODE 149
+ISR_WITHOUT_ERRORCODE 150
+ISR_WITHOUT_ERRORCODE 151
+ISR_WITHOUT_ERRORCODE 152
+ISR_WITHOUT_ERRORCODE 153
+ISR_WITHOUT_ERRORCODE 154
+ISR_WITHOUT_ERRORCODE 155
+ISR_WITHOUT_ERRORCODE 156
+ISR_WITHOUT_ERRORCODE 157
+ISR_WITHOUT_ERRORCODE 158
+ISR_WITHOUT_ERRORCODE 159
+ISR_WITHOUT_ERRORCODE 160
+ISR_WITHOUT_ERRORCODE 161
+ISR_WITHOUT_ERRORCODE 162
+ISR_WITHOUT_ERRORCODE 163
+ISR_WITHOUT_ERRORCODE 164
+ISR_WITHOUT_ERRORCODE 165
+ISR_WITHOUT_ERRORCODE 166
+ISR_WITHOUT_ERRORCODE 167
+ISR_WITHOUT_ERRORCODE 168
+ISR_WITHOUT_ERRORCODE 169
+ISR_WITHOUT_ERRORCODE 170
+ISR_WITHOUT_ERRORCODE 171
+ISR_WITHOUT_ERRORCODE 172
+ISR_WITHOUT_ERRORCODE 173
+ISR_WITHOUT_ERRORCODE 174
+ISR_WITHOUT_ERRORCODE 175
+ISR_WITHOUT_ERRORCODE 176
+ISR_WITHOUT_ERRORCODE 177
+ISR_WITHOUT_ERRORCODE 178
+ISR_WITHOUT_ERRORCODE 179
+ISR_WITHOUT_ERRORCODE 180
+ISR_WITHOUT_ERRORCODE 181
+ISR_WITHOUT_ERRORCODE 182
+ISR_WITHOUT_ERRORCODE 183
+ISR_WITHOUT_ERRORCODE 184
+ISR_WITHOUT_ERRORCODE 185
+ISR_WITHOUT_ERRORCODE 186
+ISR_WITHOUT_ERRORCODE 187
+ISR_WITHOUT_ERRORCODE 188
+ISR_WITHOUT_ERRORCODE 189
+ISR_WITHOUT_ERRORCODE 190
+ISR_WITHOUT_ERRORCODE 191
+ISR_WITHOUT_ERRORCODE 192
+ISR_WITHOUT_ERRORCODE 193
+ISR_WITHOUT_ERRORCODE 194
+ISR_WITHOUT_ERRORCODE 195
+ISR_WITHOUT_ERRORCODE 196
+ISR_WITHOUT_ERRORCODE 197
+ISR_WITHOUT_ERRORCODE 198
+ISR_WITHOUT_ERRORCODE 199
+ISR_WITHOUT_ERRORCODE 200
+ISR_WITHOUT_ERRORCODE 201
+ISR_WITHOUT_ERRORCODE 202
+ISR_WITHOUT_ERRORCODE 203
+ISR_WITHOUT_ERRORCODE 204
+ISR_WITHOUT_ERRORCODE 205
+ISR_WITHOUT_ERRORCODE 206
+ISR_WITHOUT_ERRORCODE 207
+ISR_WITHOUT_ERRORCODE 208
+ISR_WITHOUT_ERRORCODE 209
+ISR_WITHOUT_ERRORCODE 210
+ISR_WITHOUT_ERRORCODE 211
+ISR_WITHOUT_ERRORCODE 212
+ISR_WITHOUT_ERRORCODE 213
+ISR_WITHOUT_ERRORCODE 214
+ISR_WITHOUT_ERRORCODE 215
+ISR_WITHOUT_ERRORCODE 216
+ISR_WITHOUT_ERRORCODE 217
+ISR_WITHOUT_ERRORCODE 218
+ISR_WITHOUT_ERRORCODE 219
+ISR_WITHOUT_ERRORCODE 220
+ISR_WITHOUT_ERRORCODE 221
+ISR_WITHOUT_ERRORCODE 222
+ISR_WITHOUT_ERRORCODE 223
+ISR_WITHOUT_ERRORCODE 224
+ISR_WITHOUT_ERRORCODE 225
+ISR_WITHOUT_ERRORCODE 226
+ISR_WITHOUT_ERRORCODE 227
+ISR_WITHOUT_ERRORCODE 228
+ISR_WITHOUT_ERRORCODE 229
+ISR_WITHOUT_ERRORCODE 230
+ISR_WITHOUT_ERRORCODE 231
+ISR_WITHOUT_ERRORCODE 232
+ISR_WITHOUT_ERRORCODE 233
+ISR_WITHOUT_ERRORCODE 234
+ISR_WITHOUT_ERRORCODE 235
+ISR_WITHOUT_ERRORCODE 236
+ISR_WITHOUT_ERRORCODE 237
+ISR_WITHOUT_ERRORCODE 238
+ISR_WITHOUT_ERRORCODE 239
+ISR_WITHOUT_ERRORCODE 240
+ISR_WITHOUT_ERRORCODE 241
+ISR_WITHOUT_ERRORCODE 242
+ISR_WITHOUT_ERRORCODE 243
+ISR_WITHOUT_ERRORCODE 244
+ISR_WITHOUT_ERRORCODE 245
+ISR_WITHOUT_ERRORCODE 246
+ISR_WITHOUT_ERRORCODE 247
+ISR_WITHOUT_ERRORCODE 248
+ISR_WITHOUT_ERRORCODE 249
+ISR_WITHOUT_ERRORCODE 250
+ISR_WITHOUT_ERRORCODE 251
+ISR_WITHOUT_ERRORCODE 252
+ISR_WITHOUT_ERRORCODE 253
+ISR_WITHOUT_ERRORCODE 254
+ISR_WITHOUT_ERRORCODE 255
+
+;an array of all ISRs
+[SECTION .data]
+global asm_isr_array 
+asm_isr_array:
+dd asm_isr_0
+dd asm_isr_1
+dd asm_isr_2
+dd asm_isr_3
+dd asm_isr_4
+dd asm_isr_5
+dd asm_isr_6
+dd asm_isr_7
+dd asm_isr_8
+dd asm_isr_9
+dd asm_isr_10
+dd asm_isr_11
+dd asm_isr_12
+dd asm_isr_13
+dd asm_isr_14
+dd asm_isr_15
+dd asm_isr_16
+dd asm_isr_17
+dd asm_isr_18
+dd asm_isr_19
+dd asm_isr_20
+dd asm_isr_21
+dd asm_isr_22
+dd asm_isr_23
+dd asm_isr_24
+dd asm_isr_25
+dd asm_isr_26
+dd asm_isr_27
+dd asm_isr_28
+dd asm_isr_29
+dd asm_isr_30
+dd asm_isr_31
+dd asm_isr_32
+dd asm_isr_33
+dd asm_isr_34
+dd asm_isr_35
+dd asm_isr_36
+dd asm_isr_37
+dd asm_isr_38
+dd asm_isr_39
+dd asm_isr_40
+dd asm_isr_41
+dd asm_isr_42
+dd asm_isr_43
+dd asm_isr_44
+dd asm_isr_45
+dd asm_isr_46
+dd asm_isr_47
+dd asm_isr_48
+dd asm_isr_49
+dd asm_isr_50
+dd asm_isr_51
+dd asm_isr_52
+dd asm_isr_53
+dd asm_isr_54
+dd asm_isr_55
+dd asm_isr_56
+dd asm_isr_57
+dd asm_isr_58
+dd asm_isr_59
+dd asm_isr_60
+dd asm_isr_61
+dd asm_isr_62
+dd asm_isr_63
+dd asm_isr_64
+dd asm_isr_65
+dd asm_isr_66
+dd asm_isr_67
+dd asm_isr_68
+dd asm_isr_69
+dd asm_isr_70
+dd asm_isr_71
+dd asm_isr_72
+dd asm_isr_73
+dd asm_isr_74
+dd asm_isr_75
+dd asm_isr_76
+dd asm_isr_77
+dd asm_isr_78
+dd asm_isr_79
+dd asm_isr_80
+dd asm_isr_81
+dd asm_isr_82
+dd asm_isr_83
+dd asm_isr_84
+dd asm_isr_85
+dd asm_isr_86
+dd asm_isr_87
+dd asm_isr_88
+dd asm_isr_89
+dd asm_isr_90
+dd asm_isr_91
+dd asm_isr_92
+dd asm_isr_93
+dd asm_isr_94
+dd asm_isr_95
+dd asm_isr_96
+dd asm_isr_97
+dd asm_isr_98
+dd asm_isr_99
+dd asm_isr_100
+dd asm_isr_101
+dd asm_isr_102
+dd asm_isr_103
+dd asm_isr_104
+dd asm_isr_105
+dd asm_isr_106
+dd asm_isr_107
+dd asm_isr_108
+dd asm_isr_109
+dd asm_isr_110
+dd asm_isr_111
+dd asm_isr_112
+dd asm_isr_113
+dd asm_isr_114
+dd asm_isr_115
+dd asm_isr_116
+dd asm_isr_117
+dd asm_isr_118
+dd asm_isr_119
+dd asm_isr_120
+dd asm_isr_121
+dd asm_isr_122
+dd asm_isr_123
+dd asm_isr_124
+dd asm_isr_125
+dd asm_isr_126
+dd asm_isr_127
+dd asm_isr_128
+dd asm_isr_129
+dd asm_isr_130
+dd asm_isr_131
+dd asm_isr_132
+dd asm_isr_133
+dd asm_isr_134
+dd asm_isr_135
+dd asm_isr_136
+dd asm_isr_137
+dd asm_isr_138
+dd asm_isr_139
+dd asm_isr_140
+dd asm_isr_141
+dd asm_isr_142
+dd asm_isr_143
+dd asm_isr_144
+dd asm_isr_145
+dd asm_isr_146
+dd asm_isr_147
+dd asm_isr_148
+dd asm_isr_149
+dd asm_isr_150
+dd asm_isr_151
+dd asm_isr_152
+dd asm_isr_153
+dd asm_isr_154
+dd asm_isr_155
+dd asm_isr_156
+dd asm_isr_157
+dd asm_isr_158
+dd asm_isr_159
+dd asm_isr_160
+dd asm_isr_161
+dd asm_isr_162
+dd asm_isr_163
+dd asm_isr_164
+dd asm_isr_165
+dd asm_isr_166
+dd asm_isr_167
+dd asm_isr_168
+dd asm_isr_169
+dd asm_isr_170
+dd asm_isr_171
+dd asm_isr_172
+dd asm_isr_173
+dd asm_isr_174
+dd asm_isr_175
+dd asm_isr_176
+dd asm_isr_177
+dd asm_isr_178
+dd asm_isr_179
+dd asm_isr_180
+dd asm_isr_181
+dd asm_isr_182
+dd asm_isr_183
+dd asm_isr_184
+dd asm_isr_185
+dd asm_isr_186
+dd asm_isr_187
+dd asm_isr_188
+dd asm_isr_189
+dd asm_isr_190
+dd asm_isr_191
+dd asm_isr_192
+dd asm_isr_193
+dd asm_isr_194
+dd asm_isr_195
+dd asm_isr_196
+dd asm_isr_197
+dd asm_isr_198
+dd asm_isr_199
+dd asm_isr_200
+dd asm_isr_201
+dd asm_isr_202
+dd asm_isr_203
+dd asm_isr_204
+dd asm_isr_205
+dd asm_isr_206
+dd asm_isr_207
+dd asm_isr_208
+dd asm_isr_209
+dd asm_isr_210
+dd asm_isr_211
+dd asm_isr_212
+dd asm_isr_213
+dd asm_isr_214
+dd asm_isr_215
+dd asm_isr_216
+dd asm_isr_217
+dd asm_isr_218
+dd asm_isr_219
+dd asm_isr_220
+dd asm_isr_221
+dd asm_isr_222
+dd asm_isr_223
+dd asm_isr_224
+dd asm_isr_225
+dd asm_isr_226
+dd asm_isr_227
+dd asm_isr_228
+dd asm_isr_229
+dd asm_isr_230
+dd asm_isr_231
+dd asm_isr_232
+dd asm_isr_233
+dd asm_isr_234
+dd asm_isr_235
+dd asm_isr_236
+dd asm_isr_237
+dd asm_isr_238
+dd asm_isr_239
+dd asm_isr_240
+dd asm_isr_241
+dd asm_isr_242
+dd asm_isr_243
+dd asm_isr_244
+dd asm_isr_245
+dd asm_isr_246
+dd asm_isr_247
+dd asm_isr_248
+dd asm_isr_249
+dd asm_isr_250
+dd asm_isr_251
+dd asm_isr_252
+dd asm_isr_253
+dd asm_isr_254
+dd asm_isr_255

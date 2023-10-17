@@ -1,0 +1,5 @@
+-Wall
+-Wextra
+-I./include
+-m32
+-nostdinc

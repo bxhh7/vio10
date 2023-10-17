@@ -1,0 +1,223 @@
+#pragma once
+#include <ct_assert.h>
+#include <defs.h>
+
+/* GDT Stuff, see https://wiki.osdev.org/Global_Descriptor_Table  */
+#pragma pack(1)
+struct segment_descriptor_t {
+	u16 limit_low16 : 16;
+	u16 base_low16 : 16;
+	u8 base_mid8 : 8;
+
+	//Access Byte;
+	union {
+		u8 access;
+		struct {
+			u8 access_A: 1; 			/* Accessed bit. The CPU will set it when the segment is accessed */
+			u8 access_RW: 1; 			/* Readable/Writable */
+			u8 access_DC: 1; 
+			u8 access_E: 1; 			/* Executable? */
+			u8 access_S: 1; 			/* 0 for TSS, 1 for normal segments */
+			u8 access_DPL: 2; 			/* Previlege level*/
+			u8 access_P: 1; 			/* Present bit, Must be 1 for any valud segment */
+		};
+	};
+	u8 limit_high4: 4;
+
+	// Flags: 
+	u8 flag_reserved: 1;
+	u8 flag_L : 1;			/* Long mode flag, if set (1), the descriptor defines a 64-bit code segment.*/
+	u8 flag_DB: 1;			/* 0 if the segment defines a 16bit pmode segment, 1 if it defines a 32bit segment */
+	u8 flag_G: 1;			/* Granularity, if set, the limit is scaled by 4K, if not it's scaled by 1 */
+
+	u8 base_high8 : 8;
+};
+typedef struct segment_descriptor_t segment_descriptor_t;
+ct_assert(sizeof(segment_descriptor_t) == 8); // 64 bit.
+
+#pragma pack(1)
+struct gdt_descriptor_t {
+	u16 size : 16;
+	u32 address : 32;
+};
+typedef struct gdt_descriptor_t gdt_descriptor_t;
+ct_assert(sizeof(gdt_descriptor_t) == 6);
+
+#define SEG_NULL  0
+#define SEG_KCODE 1
+#define SEG_KDATA 2
+#define SEG_UDATA 3
+#define SEG_UCODE 4
+#define SEG_TSS   5
+
+/* X86 TSS(Task State Segment) */
+#pragma pack(1)
+struct tss_t {
+	u32 prev;
+	u32 esp0; 	/* the stak pointer to load when changing from ring3->ring0*/
+	u32 ss0;	/* the stack segment to load when changing from ring3->ring0*/
+	u32 esp1; // esp and ss 1 and 2 would be used when switching to rings 1 or 2.
+	/* unused: */
+	u32 ss1;
+	u32 esp2;
+	u32 ss2;
+	u32 cr3;
+	u32 eip;
+	u32 eflags;
+	u32 eax;
+	u32 ecx;
+	u32 edx;
+	u32 ebx;
+	u32 esp;
+	u32 ebp;
+	u32 esi;
+	u32 edi;
+	u32 es;
+	u32 cs;
+	u32 ss;
+	u32 ds;
+	u32 fs;
+	u32 gs;
+	u32 ldt;
+	u16 trap;
+	u16 iomap_base;
+};
+typedef struct tss_t tss_t;
+/* IDT Stuff, see https://wiki.osdev.org/Interrupt_Descriptor_Table */
+#pragma pack(1)
+struct idt_entry_t { 
+	u16 isr_low16 : 16;
+	u16 segment_selector : 16;
+	u8 reserved : 8;
+	union {
+		u8 attributes;
+		struct {
+			u8 gate_type : 4;
+			u8 zero : 1;
+			u8 dpl : 2;
+			u8 p : 1;
+		};
+	};
+	u16 isr_high16 : 16;
+};
+typedef struct idt_entry_t idt_entry_t;
+ct_assert(sizeof(idt_entry_t) == 8);
+
+#define IDT_SIZE (sizeof(idt_entry_t) * 256)
+
+#define GATE_TYPE_TASK 			0x5
+#define GATE_TYPE_INTERRUPT16	0x6
+#define GATE_TYPE_TRAP16		0x7
+#define GATE_TYPE_INTERRUPT32 	0xE
+#define GATE_TYPE_TRAP32		0xF
+#define IDT_ATTR(gate_type, dpl, p)\
+	((u8)(((p & 0x1) << 7 ) | ((dpl & 0x3) << 5)  | ((gate_type & 0xf))))
+
+#define IDT_ENTRY(isr_address, sle, attr) \
+	(idt_entry_t){.isr_low16 = isr_address & 0xffff , .segment_selector = sle, .reserved = 0, .attributes = attr, .isr_high16 = (isr_address>> 16) & 0xffff}
+
+
+#pragma pack(1)
+struct idt_descriptor_t {
+	u16 size;
+	i32 address;
+};
+typedef struct idt_descriptor_t idt_descriptor_t;
+ct_assert(sizeof(idt_descriptor_t) == 6);
+
+/* layout of a trapframe set up by the cpu and by the ISRs in isr.asm */
+#pragma pack(1)
+struct trapframe_t {
+	/* pushed by ISRs in isr.asm */
+	u32 gs; /* for some reason, these can't be pushed as u16 */
+	u32 es;
+	u32 fs;
+	u32 ds;
+
+	u32 edi;
+	u32 esi;
+	u32 ebp;
+	u32 esp;
+	u32 ebx;
+	u32 edx;
+	u32 ecx;	
+	u32 eax;
+	u16 trapno; /* trap number pushed by isr.asm */
+	u16 errcode; /* either error code or dummy byte pushed by isr.asm */
+	
+	/* pushed by the CPU */
+	u32 eip;
+	u16 cs;
+	u16 padding0;
+	u32 eflags;
+	
+	/* pushed by the CPU if the interrupt was fired from another ring (other than the one specefied in the IDT) */
+	u32 user_esp;
+	u16 ss;
+	u16 padding;
+};
+typedef struct trapframe_t trapframe_t;
+/* TODO put constants in enum(s) */
+/* PIC stuff : see https://stanislavs.org/helppc/8259.html */
+#define PIC_MASTER_CPORT 0x20
+#define PIC_SLAVE_CPORT  0xa0
+#define PIC_MASTER_DPORT (PIC_MASTER_CPORT + 1)
+#define PIC_SLAVE_DPORT  (PIC_SLAVE_CPORT + 1)
+
+#define PIC_ICW1_ICW4 				0x1 << 0 /* is icw4 needed? */
+#define PIC_ICW1_NO_ICW4			0x0 << 0
+#define PIC_ICW1_SINGLE				0x1 << 1 /* 0 for cascade mode */
+#define PIC_ICW1_CASCADE			0x0 << 1
+#define PIC_ICW1_8BYTE_VECTORS		0x1 << 2 /* 0 for 4byte vectors */
+#define PIC_ICW1_4BYTE_VECTORS		0x0 << 2
+#define PIC_ICW1_LEVEL_TRIGGERED	0x1 << 3 /* 0 for edge triggered */
+#define PIC_ICW1_EDGE_TRIGGERED 	0x0 << 3
+#define PIC_ICW1_INIT				0x1 << 4 /* must be present */
+
+/* ICW2 are IDT offsets */
+/* ICW3 tells the master PIC which IRQ is the slave connceted to */
+/* ICW3 tells the salve which master IRQ its connected to */
+
+#define PIC_ICW4_8086_MODE			0x1 << 0 /* 0 for 8085 mode */
+#define PIC_ICW4_8085_MODE			0x0 << 0 
+#define PIC_ICW4_AUTO_EOI			0x1 << 1 /* 0 for normall EOI */
+#define PIC_ICW4_NORMAL_EOI			0x0 << 1 
+#define PIC_ICW4_NOBUF_SLAVE		0x00 << 3 /* slalve not buffered */
+#define PIC_ICW4_NOBUF_MASTER		0x00 << 3 /* master not buffered */
+#define PIC_ICW4_BUF_SLAVE			0x2 << 3 /* slave buffered */
+#define PIC_ICW4_BUF_MSTER			0x3 << 3 /* master buffered */
+#define PIC_ICW4_SFNM 				0x1 << 4 /* speially fulled nsted mode ? */
+
+/* Paging stuff, see intel manual vol3 sect 4.3  */
+
+struct pte_t { /* this structure is used both for PTEs and PDEs */
+	u32 present : 1; 
+	u32 rw : 1; /* if 0, writes "may not be allowed" */ 
+	u32 dpl : 1; /* user/supervisor, 0 if user-level accesses are not allowed */
+	u32 write_through : 1; /* 1 for write through caching, otherwise writeback caching */
+	u32 cache_disabled : 1; /* if set page-level cacheing is disabled */
+	u32 accessed : 1; /* indicated whether the page was accessed by software */
+	u32 dirty : 1; /* i don't understand the access with ^ */
+	u32 table_attribute : 1; /* reserved, 0 */
+	u32 global : 1; /* if set, TLB won't be invalidated when loading CR3 */
+	u32 ignored : 3;  
+	u32 addr_12_31 : 20; /* most significant 20 bits of the address */
+};
+typedef struct pte_t pte_t;
+ct_assert(sizeof(pte_t) == 4);
+#define PAGE_SIZE 4096
+
+/* x86-specefic Functions */
+#define COM1 0x3f8  
+void outb(u16 port, u8 data);
+void outw(u16 port, u8 data);
+void outstr(u16 port, u8* address, u32 size);
+u8 inb(u16 port);
+void instr(u16 port, u8* address, u32 size);
+void sti();
+void cli();
+void nop();
+void lgdt(segment_descriptor_t* segments, u16 size);
+void lidt(idt_entry_t* idt, u16 size);
+extern void flush_gdt();
+extern void flush_tss();
